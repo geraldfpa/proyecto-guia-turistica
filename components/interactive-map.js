@@ -87,7 +87,11 @@ export default class InteractiveMap extends HTMLElement {
       .cam.no-transition { transition: none; }
       svg { width: 100%; height: 100%; display: block; }
       .prov { fill: #1e5a34; stroke: rgba(168,213,162,.2); stroke-width: 1; transition: fill .4s, stroke .4s; cursor: pointer; }
-      .prov:hover { fill: #2a7a48; stroke: rgba(168,213,162,.45); }
+      @media (hover: hover) {
+        .prov:hover { fill: #2a7a48; stroke: rgba(168,213,162,.45); }
+      }
+      .prov:focus  { outline: none; }
+      .prov        { -webkit-tap-highlight-color: transparent; }
       .prov.active { stroke: rgba(94,196,160,.6); stroke-width: 2; filter: brightness(1.25) drop-shadow(0 0 12px rgba(94,196,160,.35)); }
       .pl { font-family: 'DM Sans', system-ui, sans-serif; font-size: 11px; font-weight: 600; fill: rgba(168,213,162,.35); pointer-events: none; text-anchor: middle; letter-spacing: .06em; text-transform: uppercase; transition: fill .4s; }
       .pl.active { fill: rgba(232,239,227,.85); }
@@ -346,9 +350,7 @@ export default class InteractiveMap extends HTMLElement {
         if (this._drag.moved) return;
         const id = p.dataset.p;
         R.querySelectorAll('.prov').forEach(el => {
-          const active = el.dataset.p === id;
-          el.classList.toggle('active', active);
-          el.style.fill = active ? (this._provincias[id]?.color || '') : '';
+          el.classList.toggle('active', el.dataset.p === id);
         });
         R.querySelectorAll('.pl').forEach(l => l.classList.toggle('active', l.dataset.l === id));
         this.dispatchEvent(new CustomEvent('region-selected', { detail: { region: id }, bubbles: true, composed: true }));
@@ -359,7 +361,7 @@ export default class InteractiveMap extends HTMLElement {
     R.getElementById('m').addEventListener('click', e => {
       if (this._drag.moved) return;
       if (!e.target.closest('.prov') && !e.target.closest('.pin')) {
-        R.querySelectorAll('.prov').forEach(el => { el.classList.remove('active'); el.style.fill = ''; });
+        R.querySelectorAll('.prov').forEach(el => el.classList.remove('active'));
         R.querySelectorAll('.pl').forEach(l => l.classList.remove('active'));
       }
     });
