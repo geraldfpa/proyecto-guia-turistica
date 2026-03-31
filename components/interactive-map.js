@@ -6,6 +6,7 @@ export default class InteractiveMap extends HTMLElement {
     this._drag = { active: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, moved: false };
     this._pinch = { active: false, dist: 0, midX: 0, midY: 0, camStartX: 0, camStartY: 0, startS: 1 };
     this._destinos = [];
+    this._activePin = null;
     this._svgPaths = {};
     this._provincias = {
       CRG:  { nombre: 'Guanacaste', color: '#D4841A', cx: 300, cy: 180, zoom: 2.8 },
@@ -72,6 +73,22 @@ export default class InteractiveMap extends HTMLElement {
             </svg>
           </div>
         </div>
+        <div class="tt-backdrop" id="tt-backdrop"></div>
+        <div class="tt" id="tt" role="dialog" aria-modal="true" aria-label="Destino">
+          <button class="tt-close" id="tt-close" aria-label="Cerrar">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <div class="tt-img-wrap">
+            <img class="tt-img" id="tt-img" src="" alt="" loading="lazy"/>
+            <div class="tt-img-overlay"></div>
+          </div>
+          <div class="tt-body">
+            <p class="tt-name" id="tt-name"></p>
+            <p class="tt-region" id="tt-region"></p>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -83,7 +100,7 @@ export default class InteractiveMap extends HTMLElement {
       @media (max-width: 700px) { .wrap { height: min(400px, 75vw); } }
       .vp { width: 100%; height: 100%; cursor: grab; overflow: hidden; touch-action: none; user-select: none; }
       .vp.dragging { cursor: grabbing; }
-      .cam { width: 100%; height: 100%; transform-origin: 0 0; transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1); }
+      .cam { width: 100%; height: 100%; transform-origin: 0 0; transition: transform 0.4s ease; }
       .cam.no-transition { transition: none; }
       svg { width: 100%; height: 100%; display: block; }
       .prov { fill: #1e5a34; stroke: rgba(168,213,162,.2); stroke-width: 1; transition: fill .4s, stroke .4s; cursor: pointer; }
@@ -96,13 +113,129 @@ export default class InteractiveMap extends HTMLElement {
       .pl { font-family: 'DM Sans', system-ui, sans-serif; font-size: 11px; font-weight: 600; fill: rgba(168,213,162,.35); pointer-events: none; text-anchor: middle; letter-spacing: .06em; text-transform: uppercase; transition: fill .4s; }
       .pl.active { fill: rgba(232,239,227,.85); }
       .ol { font-family: 'DM Sans', system-ui, sans-serif; font-size: 10px; font-weight: 500; fill: rgba(94,196,160,.12); letter-spacing: .25em; text-transform: uppercase; pointer-events: none; }
-      .pin { cursor: pointer; }
+      .pin { cursor: pointer; -webkit-tap-highlight-color: transparent; }
       .pin-dot { stroke: #0a1f14; stroke-width: 1.5; transition: r .25s; }
       .pin-ring { fill: none; stroke-width: 1.5; opacity: 0; animation: rp 2.8s ease-in-out infinite; }
       @keyframes rp { 0%,100%{r:10;opacity:0} 40%{r:16;opacity:.35} 80%{r:22;opacity:0} }
       .pin-lbl { font-family: 'DM Sans', system-ui, sans-serif; font-size: 9.5px; font-weight: 500; fill: #e8efe3; text-anchor: middle; pointer-events: none; opacity: 0; transition: opacity .3s; paint-order: stroke; stroke: #0a1f14; stroke-width: 3px; }
-      .pin:hover .pin-lbl { opacity: 1; }
-      .pin:hover .pin-dot { r: 7; }
+      .pin:hover .pin-lbl, .pin.active .pin-lbl { opacity: 1; }
+      .pin:hover .pin-dot, .pin.active .pin-dot { r: 7; }
+      .pin.active .pin-ring { animation: none; opacity: .55; r: 16; }
+
+      /* ── Backdrop ─────────────────────────────────────────── */
+      .tt-backdrop {
+        position: absolute; inset: 0;
+        background: transparent;
+        z-index: 9;
+        display: none;
+        pointer-events: none;
+      }
+      .tt-backdrop.visible { display: block; pointer-events: auto; }
+
+      /* ── Tooltip card ─────────────────────────────────────── */
+      .tt {
+        position: absolute;
+        z-index: 10;
+        width: 200px;
+        background: rgba(10, 24, 16, 0.92);
+        backdrop-filter: blur(16px) saturate(1.5);
+        -webkit-backdrop-filter: blur(16px) saturate(1.5);
+        border: 1px solid rgba(94, 196, 160, 0.2);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0,0,0,.55), 0 0 0 1px rgba(94,196,160,.08);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(6px) scale(0.96);
+        transform-origin: bottom center;
+        transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+      }
+      .tt.visible {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+      }
+
+      /* Close button */
+      .tt-close {
+        position: absolute;
+        top: 8px; right: 8px;
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        font-size: 14px;
+        display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        transition: transform 0.2s ease;
+        z-index: 2;
+        padding: 0;
+      }
+      .tt-close:hover { 
+        transform: scale(1.1);
+      }
+
+      /* Image */
+      .tt-img-wrap {
+        position: relative;
+        width: 100%; height: 110px;
+        overflow: hidden;
+        background: #0a1f14;
+      }
+      .tt-img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform .4s ease;
+      }
+      .tt:hover .tt-img { transform: scale(1.04); }
+      .tt-img-overlay {
+        position: absolute; inset: 0;
+        background: linear-gradient(to bottom, transparent 50%, rgba(10,24,16,.8) 100%);
+      }
+
+      /* Body */
+      .tt-body {
+        padding: 8px 10px 10px;
+      }
+      .tt-name {
+        margin: 0;
+        font-family: 'DM Sans', system-ui, sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        color: #e8efe3;
+        letter-spacing: .02em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tt-region {
+        margin: 3px 0 0;
+        font-family: 'DM Sans', system-ui, sans-serif;
+        font-size: 10px;
+        font-weight: 500;
+        color: rgba(94,196,160,.7);
+        letter-spacing: .07em;
+        text-transform: uppercase;
+      }
+
+      /* Tail / arrow pointing down to the marker */
+      .tt::after {
+        content: '';
+        position: absolute;
+        bottom: -7px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0; height: 0;
+        border-left: 7px solid transparent;
+        border-right: 7px solid transparent;
+        border-top: 7px solid rgba(94,196,160,.25);
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,.4));
+        pointer-events: none;
+      }
     `;
   }
 
@@ -157,9 +290,23 @@ export default class InteractiveMap extends HTMLElement {
     const R = this.shadowRoot;
     const vp = R.getElementById('vp');
 
+    // ─── Pointer tracking ──────────────────────────────────────────────────────
+    // We track displacement ourselves so each pin can read an accurate
+    // "did this gesture move?" value at pointerup time.
+    // CLICK threshold: < 5px total movement → treat as click, not drag.
+    const CLICK_THRESHOLD = 8;   // px — tolerates normal desktop mouse micro-movement
+
     vp.addEventListener('pointerdown', e => {
       if (e.button !== 0) return;
-      this._drag = { active: true, startX: e.clientX, startY: e.clientY, camStartX: this._cam.x, camStartY: this._cam.y, moved: false };
+      this._drag = {
+        active:    true,
+        startX:    e.clientX,
+        startY:    e.clientY,
+        camStartX: this._cam.x,
+        camStartY: this._cam.y,
+        moved:     false,
+        dist:      0,       // accumulated Euclidean distance
+      };
       vp.classList.add('dragging');
       vp.setPointerCapture(e.pointerId);
       R.getElementById('cam').classList.add('no-transition');
@@ -169,7 +316,8 @@ export default class InteractiveMap extends HTMLElement {
       if (!this._drag.active) return;
       const dx = e.clientX - this._drag.startX;
       const dy = e.clientY - this._drag.startY;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) this._drag.moved = true;
+      this._drag.dist = Math.sqrt(dx * dx + dy * dy);
+      if (this._drag.dist > CLICK_THRESHOLD) this._drag.moved = true;
       this._cam.x = this._drag.camStartX + dx / this._cam.s;
       this._cam.y = this._drag.camStartY + dy / this._cam.s;
       this._clampCam();
@@ -181,6 +329,12 @@ export default class InteractiveMap extends HTMLElement {
       vp.classList.remove('dragging');
       vp.releasePointerCapture(e.pointerId);
       R.getElementById('cam').classList.remove('no-transition');
+      // Clear moved flag AFTER the current event cycle so the 'click'
+      // event (which fires synchronously after pointerup) can still read it,
+      // but province/SVG background clicks that fire in the SAME frame are
+      // also guarded by checking dist at click time.
+      // We reset it one rAF later — by then 'click' has already fired.
+      requestAnimationFrame(() => { this._drag.moved = false; });
     });
 
     vp.addEventListener('wheel', e => {
@@ -357,14 +511,185 @@ export default class InteractiveMap extends HTMLElement {
       });
     });
 
+    // ─── Pin interaction ──────────────────────────────────────────────────────
+    R.querySelectorAll('.pin').forEach(pin => {
+      let startX = 0, startY = 0;
+
+      pin.addEventListener('pointerdown', e => {
+        e.stopPropagation(); // crucial: prevents vp from capturing pointer!
+        startX = e.clientX;
+        startY = e.clientY;
+      });
+
+      pin.addEventListener('pointerup', e => {
+        e.stopPropagation();
+        const dist = Math.sqrt(Math.pow(e.clientX - startX, 2) + Math.pow(e.clientY - startY, 2));
+        
+        // If distance < 5px -> this is a CLICK
+        if (dist < 5) {
+          console.log("Marker clicked on desktop/mobile!", pin.dataset.id);
+          const id = pin.dataset.id;
+          const destino = this._destinos.find(d => d.id === id);
+          if (destino) this._handleMarkerClick(destino);
+        }
+      });
+
+      // Maintain fallback click prevention
+      pin.addEventListener('click', e => { e.stopPropagation(); });
+    });
+
+    // Close tooltip
+    const closeTooltip = () => {
+      const tt = R.getElementById('tt');
+      const bd = R.getElementById('tt-backdrop');
+      tt.classList.remove('visible');
+      bd.classList.remove('visible');
+      if (this._activePin) {
+        R.querySelector(`.pin[data-id="${this._activePin}"]`)?.classList.remove('active');
+        this._activePin = null;
+      }
+    };
+
+    R.getElementById('tt-close').addEventListener('click', e => {
+      e.stopPropagation();
+      closeTooltip();
+    });
+
+    R.getElementById('tt-backdrop').addEventListener('click', closeTooltip);
+
     // Click on empty SVG background resets
     R.getElementById('m').addEventListener('click', e => {
       if (this._drag.moved) return;
-      if (!e.target.closest('.prov') && !e.target.closest('.pin')) {
+      // Pins call stopPropagation() so this only runs for non-pin clicks
+      if (!e.target.closest('.prov')) {
         R.querySelectorAll('.prov').forEach(el => el.classList.remove('active'));
         R.querySelectorAll('.pl').forEach(l => l.classList.remove('active'));
+        closeTooltip();
       }
     });
+  }
+
+  // ─── Single entry point for marker interaction ────────────────────────────
+  _handleMarkerClick(destino) {
+    // Always show the tooltip, then optionally move the camera.
+    // These are fully independent — a focus failure cannot block the tooltip.
+    try { this._focusMarker(destino); } catch(err) { /* focus failed, ignore */ }
+    // _focusMarker already calls _showTooltip at the right moment.
+    // But if the camera didn't move, _showTooltip is called immediately inside
+    // _focusMarker itself, so nothing extra is needed here.
+  }
+
+  // ─── Focus marker + show tooltip ──────────────────────────────────────────
+  _focusMarker(destino) {
+    const R   = this.shadowRoot;
+    const vp  = R.getElementById('vp');
+    const cam = R.getElementById('cam');
+
+    const vpW = vp.clientWidth;
+    const vpH = vp.clientHeight;
+    const s   = this._cam.s;
+
+    // Convert SVG viewBox coords → unscaled cam-space pixels
+    const pinCamX = destino.cx / 1000 * vpW;
+    const pinCamY = destino.cy / 560  * vpH;
+
+    // ── 1. Pan to center the marker ────────────────────────────────────────
+    // Target: pin appears at (50%, 55%) of viewport
+    const targetX = vpW * 0.5 / s - pinCamX;
+    const targetY = vpH * 0.55 / s - pinCamY;
+
+    const prevX = this._cam.x;
+    const prevY = this._cam.y;
+
+    this._cam.x = targetX;
+    this._cam.y = targetY;
+    this._clampCam();
+
+    const camMoved = Math.abs(this._cam.x - prevX) > 0.5 ||
+                     Math.abs(this._cam.y - prevY) > 0.5;
+
+    this._applyCam(true);   // always animate (smooth even if tiny move)
+
+    // ── 2. Mark active pin ─────────────────────────────────────────────────
+    R.querySelectorAll('.pin').forEach(el => el.classList.remove('active'));
+    R.querySelector(`.pin[data-id="${destino.id}"]`)?.classList.add('active');
+    this._activePin = destino.id;
+
+    // ── 3. Hide current tooltip immediately ────────────────────────────────
+    R.getElementById('tt').classList.remove('visible');
+
+    // ── 4. Show tooltip (after cam settles, or immediately if no move) ─────
+    // Cancel any pending tooltip timer from a previous call
+    if (this._ttTimer) { clearTimeout(this._ttTimer); this._ttTimer = null; }
+    if (this._ttTransitionHandler) {
+      cam.removeEventListener('transitionend', this._ttTransitionHandler);
+      this._ttTransitionHandler = null;
+    }
+
+    // Populate content
+    R.getElementById('tt-img').src  = destino.imagen_portada || '';
+    R.getElementById('tt-img').alt  = destino.nombre;
+    R.getElementById('tt-name').textContent   = destino.nombre;
+    R.getElementById('tt-region').textContent =
+      this._provincias[destino.region]?.nombre || destino.region;
+
+    const showTooltip = () => this._showTooltip(destino, pinCamX, pinCamY);
+
+    if (camMoved) {
+      // Wait for the CSS transition (~500ms) to finish, then place tooltip.
+      // Fallback timeout in case transitionend doesn't fire.
+      this._ttTransitionHandler = (ev) => {
+        if (ev.propertyName !== 'transform') return;
+        cam.removeEventListener('transitionend', this._ttTransitionHandler);
+        this._ttTransitionHandler = null;
+        if (this._ttTimer) { clearTimeout(this._ttTimer); this._ttTimer = null; }
+        showTooltip();
+      };
+      cam.addEventListener('transitionend', this._ttTransitionHandler);
+      this._ttTimer = setTimeout(() => {
+        if (this._ttTransitionHandler) {
+          cam.removeEventListener('transitionend', this._ttTransitionHandler);
+          this._ttTransitionHandler = null;
+        }
+        showTooltip();
+      }, 450);
+    } else {
+      // Camera didn't move → show tooltip right away
+      showTooltip();
+    }
+  }
+
+  // ─── Position + reveal the tooltip ────────────────────────────────────────
+  _showTooltip(destino, pinCamX, pinCamY) {
+    const R  = this.shadowRoot;
+    const vp = R.getElementById('vp');
+    const tt = R.getElementById('tt');
+    const vpW = vp.clientWidth;
+    const vpH = vp.clientHeight;
+    const s   = this._cam.s;
+
+    const ttW = tt.offsetWidth  || 200;
+    const ttH = tt.offsetHeight || 155;
+    const GAP = 16;
+
+    // Actual screen position of the pin after the camera settled
+    const pinSX = s * (this._cam.x + pinCamX);
+    const pinSY = s * (this._cam.y + pinCamY);
+
+    let left = pinSX - ttW / 2;
+    let top  = pinSY - ttH - GAP;
+
+    const MARGIN = 8;
+    left = Math.max(MARGIN, Math.min(vpW - ttW - MARGIN, left));
+
+    if (top < MARGIN) top = pinSY + GAP + 14;   // flip below pin
+    top = Math.min(vpH - ttH - MARGIN, top);
+
+    tt.style.left = `${left}px`;
+    tt.style.top  = `${top}px`;
+
+    tt.classList.add('visible');
+    R.getElementById('tt-backdrop').classList.add('visible');
   }
 }
 
