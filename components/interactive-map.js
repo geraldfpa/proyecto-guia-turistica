@@ -5,40 +5,55 @@ export default class InteractiveMap extends HTMLElement {
     this._cam = { x: 0, y: 0, s: 1 };
     this._drag = { active: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, moved: false };
     this._destinos = [];
+    this._svgPaths = {};
     this._provincias = {
-      CRG:{nombre:'Guanacaste',color:'#D4841A', cx:300, cy:180, zoom:2.8},
-      CRA:{nombre:'Alajuela',color:'#2E86DE', cx:500, cy:160, zoom:3.0},
-      CRH:{nombre:'Heredia',color:'#8E44AD', cx:620, cy:185, zoom:4.5},
-      CRSJ:{nombre:'San José',color:'#27AE60', cx:590, cy:310, zoom:3.5},
-      CRC:{nombre:'Cartago',color:'#E85D4A', cx:680, cy:280, zoom:4.0},
-      CRL:{nombre:'Limón',color:'#1ABC9C', cx:780, cy:280, zoom:2.2},
-      CRP:{nombre:'Puntarenas',color:'#E67E22', cx:420, cy:400, zoom:1.6}
+      CRG:  { nombre: 'Guanacaste', color: '#D4841A', cx: 300, cy: 180, zoom: 2.8 },
+      CRA:  { nombre: 'Alajuela',   color: '#2E86DE', cx: 500, cy: 160, zoom: 3.0 },
+      CRH:  { nombre: 'Heredia',    color: '#8E44AD', cx: 620, cy: 185, zoom: 4.5 },
+      CRSJ: { nombre: 'San José',   color: '#27AE60', cx: 590, cy: 310, zoom: 3.5 },
+      CRC:  { nombre: 'Cartago',    color: '#E85D4A', cx: 680, cy: 280, zoom: 4.0 },
+      CRL:  { nombre: 'Limón',      color: '#1ABC9C', cx: 780, cy: 280, zoom: 2.2 },
+      CRP:  { nombre: 'Puntarenas', color: '#E67E22', cx: 420, cy: 400, zoom: 1.6 },
     };
   }
 
   async connectedCallback() {
-    this._paths = await fetch('./antigravity/resources/mapa-interactivo-cr (1).html')
-      .then(r => r.text())
-      .then(t => this._extractPaths(t));
-      
-    this._destinos = await fetch('./data/destinos.json').then(r => r.json());
-    
+    const [paths, destinos] = await Promise.all([
+      fetch('./data/map-paths.json').then(r => r.json()),
+      fetch('./data/destinos.json').then(r => r.json()),
+    ]);
+    this._svgPaths = paths;
+    this._destinos = destinos;
+
     this.shadowRoot.innerHTML = `<style>${this._css()}</style>${this._html()}`;
     this._bindAll();
   }
 
-  _extractPaths(html) {
-    const rawPaths = html.match(/<g>([\s\S]*?)<\/g>/)[1] || '';
-    return rawPaths.replace(/class="prov"/g, 'class="prov"'); // Keeping raw SVG elements
-  }
-
   _html() {
+    // Province path elements
+    let provPaths = '';
+    for (const [key, d] of Object.entries(this._svgPaths)) {
+      if (d) provPaths += `<path class="prov" data-p="${key}" d="${d}"/>`;
+    }
+
+    // Province labels
+    const labels = {
+      CRG: [290, 175], CRA: [500, 150], CRH: [625, 178],
+      CRSJ: [580, 295], CRC: [680, 270], CRL: [780, 280], CRP: [420, 400]
+    };
+    let provLabels = '';
+    for (const [key, [x, y]] of Object.entries(labels)) {
+      const p = this._provincias[key];
+      if (p) provLabels += `<text class="pl" data-l="${key}" x="${x}" y="${y}">${p.nombre}</text>`;
+    }
+
+    // Pin markers
     let pins = this._destinos.map(d => {
       const c = this._provincias[d.region]?.color || '#a8d5a2';
       return `<g class="pin" data-id="${d.id}" data-p="${d.region}">
-        <circle class="pin-ring" cx="${d.cx}" cy="${d.cy}" r="12" stroke="${c}" style="animation-delay:0s"/>
-        <circle class="pin-dot" cx="${d.cx}" cy="${d.cy}" r="5" fill="${c}" />
-        <text class="pin-lbl" x="${d.cx}" y="${d.cy-14}">${d.nombre}</text>
+        <circle class="pin-ring" cx="${d.cx}" cy="${d.cy}" r="12" stroke="${c}" style="animation-delay:${(Math.random()*2).toFixed(1)}s"/>
+        <circle class="pin-dot" cx="${d.cx}" cy="${d.cy}" r="5" fill="${c}"/>
+        <text class="pin-lbl" x="${d.cx}" y="${d.cy - 14}">${d.nombre}</text>
       </g>`;
     }).join('');
 
@@ -47,8 +62,11 @@ export default class InteractiveMap extends HTMLElement {
         <div class="vp" id="vp">
           <div class="cam" id="cam">
             <svg id="m" viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg">
-              <rect width="1000" height="560" fill="transparent"/>
-              <g id="map-paths">${this._paths}</g>
+              <rect width="1000" height="560" fill="#0a1f14"/>
+              <text class="ol" x="820" y="50">Mar Caribe</text>
+              <text class="ol" x="60" y="540">Océano Pacífico</text>
+              <g>${provPaths}</g>
+              <g>${provLabels}</g>
               <g>${pins}</g>
             </svg>
           </div>
@@ -59,60 +77,55 @@ export default class InteractiveMap extends HTMLElement {
 
   _css() {
     return `
-      :host { display: block; width: 100%; border-radius: var(--radius-xl); overflow: hidden; background: var(--color-surface-lowest); }
-      .wrap { position: relative; width: 100%; height: 560px; }
-      .vp { width: 100%; height: 100%; cursor: grab; overflow: hidden; touch-action: none; }
+      :host { display: block; width: 100%; border-radius: var(--radius-xl, 16px); overflow: hidden; }
+      .wrap { position: relative; width: 100%; height: 560px; background: #0a1f14; }
+      .vp { width: 100%; height: 100%; cursor: grab; overflow: hidden; touch-action: none; user-select: none; }
       .vp.dragging { cursor: grabbing; }
       .cam { width: 100%; height: 100%; transform-origin: 0 0; transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1); }
       .cam.no-transition { transition: none; }
       svg { width: 100%; height: 100%; display: block; }
-      .prov { fill: var(--color-surface-dim); stroke: var(--color-outline-variant); stroke-width: 1px; transition: all 0.3s; cursor: pointer; }
-      .prov:hover { fill: var(--color-surface-highest); }
-      .prov.active { stroke: var(--color-primary); fill: var(--color-surface); z-index: 10; }
+      .prov { fill: #1e5a34; stroke: rgba(168,213,162,.2); stroke-width: 1; transition: fill .4s, stroke .4s; cursor: pointer; }
+      .prov:hover { fill: #2a7a48; stroke: rgba(168,213,162,.45); }
+      .prov.active { stroke: rgba(94,196,160,.6); stroke-width: 2; filter: brightness(1.25) drop-shadow(0 0 12px rgba(94,196,160,.35)); }
+      .pl { font-family: 'DM Sans', system-ui, sans-serif; font-size: 11px; font-weight: 600; fill: rgba(168,213,162,.35); pointer-events: none; text-anchor: middle; letter-spacing: .06em; text-transform: uppercase; transition: fill .4s; }
+      .pl.active { fill: rgba(232,239,227,.85); }
+      .ol { font-family: 'DM Sans', system-ui, sans-serif; font-size: 10px; font-weight: 500; fill: rgba(94,196,160,.12); letter-spacing: .25em; text-transform: uppercase; pointer-events: none; }
       .pin { cursor: pointer; }
-      .pin-dot { stroke: var(--color-background); stroke-width: 1.5px; transition: r 0.2s; }
-      .pin-ring { fill: none; stroke-width: 1.5px; opacity: 0; animation: pulse 2.5s infinite; }
-      .pin-lbl { font-family: var(--font-body); font-size: 10px; font-weight: 600; fill: var(--color-on-surface); text-anchor: middle; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+      .pin-dot { stroke: #0a1f14; stroke-width: 1.5; transition: r .25s; }
+      .pin-ring { fill: none; stroke-width: 1.5; opacity: 0; animation: rp 2.8s ease-in-out infinite; }
+      @keyframes rp { 0%,100%{r:10;opacity:0} 40%{r:16;opacity:.35} 80%{r:22;opacity:0} }
+      .pin-lbl { font-family: 'DM Sans', system-ui, sans-serif; font-size: 9.5px; font-weight: 500; fill: #e8efe3; text-anchor: middle; pointer-events: none; opacity: 0; transition: opacity .3s; paint-order: stroke; stroke: #0a1f14; stroke-width: 3px; }
       .pin:hover .pin-lbl { opacity: 1; }
       .pin:hover .pin-dot { r: 7; }
-      @keyframes pulse { 0% { r: 10; opacity: 0 } 50% { r: 16; opacity: 0.4 } 100% { r: 22; opacity: 0 } }
     `;
   }
 
-  _applyCam(animate=true) {
+  _applyCam(animate = true) {
     const cam = this.shadowRoot.getElementById('cam');
-    if(!animate) cam.classList.add('no-transition');
+    if (!animate) cam.classList.add('no-transition');
     else cam.classList.remove('no-transition');
-    cam.style.transform = `translate(${this._cam.x}px, ${this._cam.y}px) scale(${this._cam.s})`;
+    cam.style.transform = `scale(${this._cam.s}) translate(${this._cam.x}px, ${this._cam.y}px)`;
   }
 
   _bindAll() {
-    const vp = this.shadowRoot.getElementById('vp');
+    const R = this.shadowRoot;
+    const vp = R.getElementById('vp');
+
     vp.addEventListener('pointerdown', e => {
-      this._drag.active = true;
-      this._drag.startX = e.clientX;
-      this._drag.startY = e.clientY;
-      this._drag.camStartX = this._cam.x;
-      this._drag.camStartY = this._cam.y;
+      if (e.button !== 0) return;
+      this._drag = { active: true, startX: e.clientX, startY: e.clientY, camStartX: this._cam.x, camStartY: this._cam.y, moved: false };
       vp.classList.add('dragging');
       vp.setPointerCapture(e.pointerId);
+      R.getElementById('cam').classList.add('no-transition');
     });
 
     vp.addEventListener('pointermove', e => {
       if (!this._drag.active) return;
       const dx = e.clientX - this._drag.startX;
       const dy = e.clientY - this._drag.startY;
-      
-      let newX = this._drag.camStartX + dx / this._cam.s;
-      let newY = this._drag.camStartY + dy / this._cam.s;
-
-      // Clamping bounds to keep map within view
-      const maxW = 1000 - (1000 / this._cam.s);
-      const maxH = 560 - (560 / this._cam.s);
-      
-      this._cam.x = Math.min(0, Math.max(-maxW, newX));
-      this._cam.y = Math.min(0, Math.max(-maxH, newY));
-      
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) this._drag.moved = true;
+      this._cam.x = this._drag.camStartX + dx / this._cam.s;
+      this._cam.y = this._drag.camStartY + dy / this._cam.s;
       this._applyCam(false);
     });
 
@@ -120,16 +133,42 @@ export default class InteractiveMap extends HTMLElement {
       this._drag.active = false;
       vp.classList.remove('dragging');
       vp.releasePointerCapture(e.pointerId);
+      R.getElementById('cam').classList.remove('no-transition');
     });
 
     vp.addEventListener('wheel', e => {
       e.preventDefault();
       const s = this._cam.s;
-      const ns = e.deltaY > 0 ? Math.max(1, s * 0.9) : Math.min(6, s * 1.1);
+      const ns = e.deltaY > 0 ? Math.max(1, s * 0.88) : Math.min(6, s * 1.14);
       this._cam.s = ns;
       this._applyCam(false);
-      setTimeout(() => this.shadowRoot.getElementById('cam').classList.remove('no-transition'), 50);
+      setTimeout(() => R.getElementById('cam').classList.remove('no-transition'), 100);
     }, { passive: false });
+
+    // Province click highlights
+    R.querySelectorAll('.prov').forEach(p => {
+      p.addEventListener('click', () => {
+        if (this._drag.moved) return;
+        const id = p.dataset.p;
+        R.querySelectorAll('.prov').forEach(el => {
+          const active = el.dataset.p === id;
+          el.classList.toggle('active', active);
+          el.style.fill = active ? (this._provincias[id]?.color || '') : '';
+        });
+        R.querySelectorAll('.pl').forEach(l => l.classList.toggle('active', l.dataset.l === id));
+        this.dispatchEvent(new CustomEvent('region-selected', { detail: { region: id }, bubbles: true, composed: true }));
+      });
+    });
+
+    // Click on empty SVG background resets
+    R.getElementById('m').addEventListener('click', e => {
+      if (this._drag.moved) return;
+      if (!e.target.closest('.prov') && !e.target.closest('.pin')) {
+        R.querySelectorAll('.prov').forEach(el => { el.classList.remove('active'); el.style.fill = ''; });
+        R.querySelectorAll('.pl').forEach(l => l.classList.remove('active'));
+      }
+    });
   }
 }
+
 customElements.define('interactive-map', InteractiveMap);
