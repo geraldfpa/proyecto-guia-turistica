@@ -100,10 +100,51 @@ export default class InteractiveMap extends HTMLElement {
     `;
   }
 
+  _clampCam() {
+    const vp = this.shadowRoot.getElementById('vp');
+    if (!vp) return;
+    const { width: cW, height: cH } = vp.getBoundingClientRect();
+    // Natural map dimensions (SVG viewBox)
+    const mapW = 1000;
+    const mapH = 560;
+    const s = this._cam.s;
+    // When the map is larger than the container, keep it from scrolling off-screen.
+    // Transform order is: translate(x,y) then scale(s) from origin 0,0.
+    // So the visible range of the translated map in screen pixels is [x*s … x*s + mapW*s].
+    const scaledW = mapW * s;
+    const scaledH = mapH * s;
+
+    let minX, maxX, minY, maxY;
+    if (scaledW <= cW) {
+      // Map fits horizontally — center it and forbid horizontal drag
+      this._cam.x = (cW - scaledW) / (2 * s);
+      minX = this._cam.x;
+      maxX = this._cam.x;
+    } else {
+      // Keep at least 1px of the map visible on each side
+      minX = (cW - scaledW) / s;   // leftmost allowed translate (right edge at viewport right)
+      maxX = 0;                     // rightmost allowed translate (left edge at viewport left)
+    }
+
+    if (scaledH <= cH) {
+      // Map fits vertically — center it and forbid vertical drag
+      this._cam.y = (cH - scaledH) / (2 * s);
+      minY = this._cam.y;
+      maxY = this._cam.y;
+    } else {
+      minY = (cH - scaledH) / s;
+      maxY = 0;
+    }
+
+    this._cam.x = Math.min(maxX, Math.max(minX, this._cam.x));
+    this._cam.y = Math.min(maxY, Math.max(minY, this._cam.y));
+  }
+
   _applyCam(animate = true) {
     const cam = this.shadowRoot.getElementById('cam');
     if (!animate) cam.classList.add('no-transition');
     else cam.classList.remove('no-transition');
+    // transform order: translate first (in unscaled space), then scale from origin
     cam.style.transform = `scale(${this._cam.s}) translate(${this._cam.x}px, ${this._cam.y}px)`;
   }
 
@@ -126,6 +167,7 @@ export default class InteractiveMap extends HTMLElement {
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) this._drag.moved = true;
       this._cam.x = this._drag.camStartX + dx / this._cam.s;
       this._cam.y = this._drag.camStartY + dy / this._cam.s;
+      this._clampCam();
       this._applyCam(false);
     });
 
@@ -138,9 +180,29 @@ export default class InteractiveMap extends HTMLElement {
 
     vp.addEventListener('wheel', e => {
       e.preventDefault();
-      const s = this._cam.s;
-      const ns = e.deltaY > 0 ? Math.max(1, s * 0.88) : Math.min(6, s * 1.14);
-      this._cam.s = ns;
+      const oldS = this._cam.s;
+      const newS = e.deltaY > 0 ? Math.max(1, oldS * 0.88) : Math.min(6, oldS * 1.14);
+      if (newS === oldS) return;
+
+      // Mouse position relative to the viewport element
+      const rect = vp.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;   // pixels from vp left edge
+      const mouseY = e.clientY - rect.top;    // pixels from vp top edge
+
+      // Convert mouse position into the map's coordinate space (pre-scale)
+      // With transform: scale(s) translate(x, y), a screen point maps to:
+      //   mapX = mouseX / s - x
+      //   mapY = mouseY / s - y
+      const mapX = mouseX / oldS - this._cam.x;
+      const mapY = mouseY / oldS - this._cam.y;
+
+      // After scale change, adjust translation so mapX/mapY stays under the cursor:
+      //   mouseX = (mapX + newX) * newS  →  newX = mouseX / newS - mapX
+      this._cam.x = mouseX / newS - mapX;
+      this._cam.y = mouseY / newS - mapY;
+      this._cam.s = newS;
+
+      this._clampCam();
       this._applyCam(false);
       setTimeout(() => R.getElementById('cam').classList.remove('no-transition'), 100);
     }, { passive: false });
