@@ -17,6 +17,7 @@
   <!-- Componentes Web -->
   <script type="module" src="./components/hero-section.js"></script>
   <script type="module" src="./components/interactive-map.js"></script>
+  <script type="module" src="./components/destination-modal.js"></script>
 </head>
 <body>
 
@@ -61,6 +62,9 @@
     </div>
   </footer>
 
+  <!-- Modal Global de Destino -->
+  <destination-modal id="app-modal"></destination-modal>
+
   <script>
     // Configuración responsive sencilla
     const updateNav = () => {
@@ -70,6 +74,15 @@
     };
     window.addEventListener('resize', updateNav);
     updateNav();
+
+    // Event listener global para el Mapa Interactivo y Modal de Destino
+    document.addEventListener('show-destination-details', (e) => {
+      const modal = document.getElementById('app-modal');
+      if (modal && e.detail && e.detail.destino) {
+        modal.destino = e.detail.destino; // Envía los datos
+        modal.open(); // Llama al método de apertura
+      }
+    });
   </script>
 </body>
 </html>

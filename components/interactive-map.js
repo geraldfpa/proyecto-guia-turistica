@@ -87,6 +87,7 @@ export default class InteractiveMap extends HTMLElement {
           <div class="tt-body">
             <p class="tt-name" id="tt-name"></p>
             <p class="tt-region" id="tt-region"></p>
+            <button class="tt-more-btn" id="tt-more-btn">Ver más detalles</button>
           </div>
         </div>
       </div>
@@ -235,6 +236,27 @@ export default class InteractiveMap extends HTMLElement {
         border-top: 7px solid rgba(94,196,160,.25);
         filter: drop-shadow(0 2px 4px rgba(0,0,0,.4));
         pointer-events: none;
+      }
+
+      /* Ver mas btn */
+      .tt-more-btn {
+        margin-top: 8px;
+        width: 100%;
+        background: rgba(94,196,160,.1);
+        color: var(--color-primary, #4de082);
+        border: 1px solid rgba(94,196,160,.3);
+        border-radius: 6px;
+        padding: 6px;
+        font-family: 'DM Sans', system-ui, sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+      }
+      .tt-more-btn:hover {
+        background: rgba(94,196,160,.2);
       }
     `;
   }
@@ -553,6 +575,21 @@ export default class InteractiveMap extends HTMLElement {
     R.getElementById('tt-close').addEventListener('click', e => {
       e.stopPropagation();
       closeTooltip();
+    });
+
+    R.getElementById('tt-more-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      if (this._activePin) {
+        const destino = this._destinos.find(d => d.id === this._activePin);
+        if (destino) {
+          this.dispatchEvent(new CustomEvent('show-destination-details', { 
+            detail: { destino }, 
+            bubbles: true, 
+            composed: true 
+          }));
+          closeTooltip(); // Optional: close the tooltip
+        }
+      }
     });
 
     R.getElementById('tt-backdrop').addEventListener('click', closeTooltip);
