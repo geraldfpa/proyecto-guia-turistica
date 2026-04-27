@@ -81,7 +81,7 @@ export default class DestinationModal extends HTMLElement {
                  `</div>`;
     }
 
-    this.shadowRoot.innerHTML = `
+    this.shadowRoot.innerHTML = /*html*/`
       <style>
         :host {
           --modal-bg: var(--color-surface-dim, #131b16);
@@ -248,7 +248,7 @@ export default class DestinationModal extends HTMLElement {
           object-fit: cover; /* or contain depending on preference */
         }
 
-        @media (min-width: 768px) {
+        @media (width >= 768px) {
            .modal { flex-direction: row; align-items: stretch; height: 75vh; }
            .gallery { width: 45%; height: 100%; min-height: auto; }
            .content-wrap { width: 55%; }

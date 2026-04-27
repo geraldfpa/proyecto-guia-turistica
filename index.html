@@ -12,30 +12,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
   <!-- Estilos Globales -->
-  <link rel="stylesheet" href="./css/global.css">
+  <link rel="stylesheet" href="./src/styles/global.css">
 
   <!-- Componentes Web -->
-  <script type="module" src="./components/hero-section.js"></script>
-  <script type="module" src="./components/interactive-map.js"></script>
-  <script type="module" src="./components/destination-modal.js"></script>
+  <script type="module" src="./src/components/layout/hero-section.js"></script>
+  <script type="module" src="./src/components/features/interactive-map/interactive-map.js"></script>
+  <script type="module" src="./src/components/features/destination-modal.js"></script>
+  <script type="module" src="./src/components/layout/app-header.js"></script>
 </head>
 <body>
 
-  <!-- App Header / Navegación Global (fuera de Shadow DOM para facilidad, pero usando tokens globales) -->
-  <nav class="glass-nav" style="position: fixed; top: 0; width: 100%; z-index: 50; padding: 1rem 0; box-shadow: var(--shadow-ambient);">
-    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
-      <div style="font-family: var(--font-headline); font-style: italic; font-size: 1.5rem; color: #fff;">Verdant</div>
-      
-      <div class="nav-links" style="display: none;">
-        <!-- Aquí irían los links en desktop. Por brevedad los omito o los dejo simples. -->
-        <a href="#" style="color: var(--color-primary); font-weight: 700; text-decoration: none; border-bottom: 2px solid var(--color-primary);">Inicio</a>
-        <a href="#" style="color: rgba(221, 228, 222, 0.8); text-decoration: none; margin-left: 2rem;">Experiencias</a>
-        <a href="#" style="color: rgba(221, 228, 222, 0.8); text-decoration: none; margin-left: 2rem;">Destinos</a>
-      </div>
-
-      <button class="btn-primary">Planea tu viaje</button>
-    </div>
-  </nav>
+  <!-- App Header Web Component -->
+  <app-header></app-header>
 
   <!-- Contenido Principal -->
   <main style="padding-top: 60px;"> <!-- padding top for fixed nav -->
@@ -66,15 +54,6 @@
   <destination-modal id="app-modal"></destination-modal>
 
   <script>
-    // Configuración responsive sencilla
-    const updateNav = () => {
-      const match = window.matchMedia("(min-width: 768px)").matches;
-      document.querySelector('.nav-links').style.display = match ? 'flex' : 'none';
-      document.querySelector('.nav-links').style.alignItems = 'center';
-    };
-    window.addEventListener('resize', updateNav);
-    updateNav();
-
     // Event listener global para el Mapa Interactivo y Modal de Destino
     document.addEventListener('show-destination-details', (e) => {
       const modal = document.getElementById('app-modal');
