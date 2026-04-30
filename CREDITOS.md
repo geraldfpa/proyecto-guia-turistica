@@ -1,4 +1,6 @@
-﻿## Créditos
+﻿# Créditos
+
+## Central 
 
 - **Imagen URL**: https://www.visitcentroamerica.com/wp-content/uploads/2025/04/Irazu-Volcano-Crater-Lagoon-Costa-Rica-Centroamerica-02.webp
   - **Créditos a**: www.visitcentroamerica.com
@@ -39,3 +41,50 @@
 - **Imagen URL**: https://upload.wikimedia.org/wikipedia/commons/3/3f/Poas_crater.jpg
   - **Licencia**: De uso libre
 
+
+## Guanacaste 
+
+- **Imagen URL**: https://unsplash.com/es/fotos/tortuga-negra-y-marron-en-la-orilla-de-la-playa-durante-el-dia-Xchp9dzP0ao
+  - **Licencia**: Unsplash License
+
+- **Imagen URL**: https://unsplash.com/es/fotos/una-persona-caminando-por-una-playa-con-una-tabla-de-surf-AR2aTmXlsCs
+  - **Licencia**: Unsplash License
+
+- **Imagen URL**: https://unsplash.com/es/fotos/una-playa-de-arena-con-olas-entrando-y-saliendo-del-agua-sqcOy21Igcw
+  - **Licencia**: Unsplash License
+
+- **Imagen URL**: https://unsplash.com/es/fotos/un-grupo-de-personas-de-pie-en-la-cima-de-una-playa-de-arena-DpYh9jKOdyQ
+  - **Licencia**: Unsplash License
+
+- **Imagen URL**: https://unsplash.com/es/fotos/un-pajaro-esta-parado-en-la-playa-al-atardecer-FjflgWmjmIQ
+  - **Licencia**: Unsplash License
+
+- **Imagen URL**: https://www.guachipelin.com/es/rincon-de-la-vieja/
+  - **Créditos a**: Hotel Hacienda Guachipelin
+
+- **Imagen URL**: https://dynamic-media.tacdn.com/media/photo-o/2f/10/03/a4/caption.jpg?w=1100&h=800&s=1
+  - **Créditos a**: Viator, Inc.
+
+- **Imagen URL**: https://www.aratours.com/images/CONTENIDO-MAIN/Mafe/RDV/Rincon-de-la-Vieja-fumarola.JPG
+  - **Créditos a**: ARA Agencia de Viajes Internacional S.A
+
+- **Imagen URL**: https://www.larespuestaesviajar.com/wp-content/uploads/2019/10/GOPR0925-1.jpg
+  - **Créditos a**: La respuesta es viajar (Todos los derechos reservados)
+
+- **Imagen URL**: https://media.tacdn.com/media/attractions-splice-spp-674x446/0a/b1/71/f0.jpg
+  - **Créditos a**: Viator
+
+- **Imagen URL**: https://www.twoweeksincostarica.com/wp-content/uploads/2026/01/Playa-conchal.jpg
+  - **Créditos a**: Two Weeks in Costa Rica, Inc.
+
+- **Imagen URL**: https://nativeswaycostarica.com/wp-content/uploads/2024/10/Snorkeling-from-Papagayo-2-400x300.jpg
+  - **Créditos a**: Native's Way Costa Rica 2022
+
+- **Imagen URL**: https://images.trvl-media.com/place/6350727/34056451-edf3-42f3-b7d1-a4af3f27680c.jpg
+  - **Créditos a**: Expedia, Inc.
+
+- **Imagen URL**: https://www.nadaincluido.com/wp-content/uploads/5c-Playa-Conchal-arena-3-1-768x512.jpg
+  - **Créditos a**: NadaIncluido.com / Sergio Otegui Palacios
+
+- **Imagen URL**: https://www.nacion.com/resizer/v2/723RUNLPHNAIDB6DHH52XSUPSI.jpg
+  - **Créditos a**: Grupo Nación GN S.A.
