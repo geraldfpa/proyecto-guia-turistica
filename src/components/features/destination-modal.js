@@ -18,6 +18,13 @@ export default class DestinationModal extends HTMLElement {
       overlay.classList.add('visible');
       this.shadowRoot.getElementById('close-btn')?.focus();
       document.body.style.overflow = 'hidden';
+
+      if (this._destino?.audio) {
+        this._audio = new Audio(this._destino.audio);
+        this._audio.volume = 0.4;
+        this._audio.play().catch(() => {});
+        this._audioTimer = setTimeout(() => this._audio?.pause(), 8000);
+      }
     }
   }
 
@@ -26,11 +33,18 @@ export default class DestinationModal extends HTMLElement {
     if (overlay) {
       overlay.classList.remove('visible');
       document.body.style.overflow = '';
-      
+
       // Stop media from playing when closed
       const video = this.shadowRoot.querySelector('video');
       if (video) {
         video.pause();
+      }
+
+      clearTimeout(this._audioTimer);
+      if (this._audio) {
+        this._audio.pause();
+        this._audio.currentTime = 0;
+        this._audio = null;
       }
     }
   }
