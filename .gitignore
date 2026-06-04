@@ -1,5 +1,8 @@
 node_modules/
 *.py
 antigravity/
-guia_interactive_map.md 
-guia_web_components.md 
+guia_interactive_map.md
+guia_web_components.md
+
+# Notas personales (no se trackean)
+docs/ci-review-en-forks.md

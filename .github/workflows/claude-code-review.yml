@@ -1,20 +1,11 @@
 name: Claude Code Review
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
 
 jobs:
   claude-review:
-    # SEGURIDAD: con pull_request_target los secrets SÍ están disponibles en PRs
-    # desde forks, pero también se ejecuta código no confiable. Este allowlist
-    # se evalúa ANTES de cualquier checkout: si el autor no está autorizado, el
-    # job se saltea entero y el código del fork nunca toca el runner con secrets.
-    if: >
-      contains(
-        fromJSON('["JoseDavidGarciaDowning", "GeraldFPA", "Mfce3012", "VictorRodz"]'),
-        github.event.pull_request.user.login
-      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -23,14 +14,9 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout PR head
+      - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
-          # pull_request_target hace checkout de la rama base por defecto.
-          # Fijamos el SHA exacto del head del PR (no el ref) para que Claude
-          # revise el código real del PR y para evitar una condición de carrera
-          # donde se empujen commits nuevos después de pasar el allowlist.
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
 
       - name: Run Claude Code Review
