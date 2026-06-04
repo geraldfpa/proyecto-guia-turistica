@@ -73,7 +73,8 @@
     to bottom,
     rgba(0, 0, 0, 0.6) 0%,
     rgba(2, 44, 25, 0.4) 50%,
-    rgba(2, 44, 25, 0.9) 100%
+    rgba(2, 44, 25, 0.95) 85%,
+    var(--color-hero-deep) 100% /* Cierra en verde sólido = misma costura que .section-hero-fade */
   );
 }
 
