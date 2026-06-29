@@ -382,10 +382,14 @@ export default class DestinationModal extends HTMLElement {
         </div>
       </div>
       <!-- Audio Element: Hidden, plays only once when modal opens -->
-      ${d.audio ? `<audio id="destination-audio" preload="metadata">
+      ${
+        d.audio
+          ? `<audio id="destination-audio" preload="metadata">
         <source src="${d.audio}" type="audio/mpeg">
         Tu navegador no soporta audio.
-      </audio>` : ''}
+      </audio>`
+          : ""
+      }
       
     `);
 
